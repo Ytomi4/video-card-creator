@@ -35,6 +35,73 @@
       .section {
         margin-bottom: var(--figma-space-large);
       }
+      .setup-steps {
+        width: 100%;
+        max-width: min(600px, 100vw - 2 * var(--figma-space-med));
+        margin: var(--figma-space-med) auto;
+        padding: 0 var(--figma-space-small);
+        box-sizing: border-box;
+      }
+      .step {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--figma-space-med);
+        margin-bottom: var(--figma-space-med);
+        padding: var(--figma-space-med);
+        border: 1px solid var(--figma-color-border);
+        border-radius: var(--figma-radius-med);
+        background: var(--figma-color-bg);
+        transition: all 0.2s ease;
+      }
+      .step.completed {
+        background: var(--figma-color-bg-secondary);
+        border-color: var(--figma-color-brand);
+      }
+      .step.disabled {
+        background: var(--figma-color-bg-tertiary);
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .step-number {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--figma-color-border);
+        color: var(--figma-color-text-secondary);
+        font-size: 14px;
+        font-weight: 600;
+        flex-shrink: 0;
+        margin-top: 4px;
+      }
+      .step.completed .step-number {
+        background: var(--figma-color-brand);
+        color: white;
+      }
+      .step-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--figma-space-small);
+      }
+      .step-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--figma-color-text);
+        margin: 0;
+      }
+      .step-description {
+        font-size: 12px;
+        color: var(--figma-color-text-secondary);
+        margin: 0;
+      }
+      .step-button {
+        align-self: flex-start;
+        min-width: 80px;
+        width: auto;
+      }
       .materials {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -61,11 +128,28 @@
         text-decoration: none;
         box-sizing: border-box;
         min-width: 0;
+        font-family: inherit;
       }
-      .material-button:hover {
+      .material-button:hover:not(:disabled) {
         background: var(--figma-color-bg-secondary);
         border-color: var(--figma-color-text-secondary);
       }
+      .material-button:disabled {
+        background: var(--figma-color-bg-tertiary);
+        color: var(--figma-color-text-secondary);
+        border-color: var(--figma-color-border);
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      /* プレビュー領域を初期状態で非表示にする */
+      .preview-section {
+        display: none;
+      }
+
+      .preview-section.visible {
+        display: block;
+      }
+
       .controls {
         margin-bottom: var(--figma-space-med);
         background: var(--figma-color-bg-secondary);
@@ -122,6 +206,11 @@
         display: flex;
         justify-content: center;
         align-items: center;
+      }
+      .reset-controls {
+        display: flex;
+        justify-content: center;
+        margin-top: var(--figma-space-med);
       }
       .primary-button {
         background: var(--figma-color-bg);
@@ -203,27 +292,53 @@
   </head>
   <body>
     <div class="section">
-      <div class="materials">
-        <button id="getMaskImage" class="material-button">
-          <span>フレームを選択</span>
-        </button>
-        <label
-          class="material-button"
-          for="videoUpload"
-          style="cursor: pointer"
-        >
-          <span>動画を選択</span>
-        </label>
-        <input
-          type="file"
-          id="videoUpload"
-          accept="video/webm,video/mp4"
-          hidden
-        />
+      <div class="setup-steps">
+        <!-- ステップ1: フレーム選択 -->
+        <div class="step" id="step1">
+          <div class="step-number" id="step1Number">1</div>
+          <div class="step-content">
+            <h3 class="step-title">フレームを選ぶ</h3>
+            <p class="step-description">
+              Figma上でフレームを選択状態にして「次へ」をクリック
+            </p>
+            <button id="getMaskImage" class="material-button step-button">
+              <span>次へ</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ステップ2: 動画選択 -->
+        <div class="step disabled" id="step2">
+          <div class="step-number" id="step2Number">2</div>
+          <div class="step-content">
+            <h3 class="step-title">動画を選ぶ</h3>
+            <p class="step-description">
+              背景に合成する動画ファイル（WebM/MP4）を選ぶ
+            </p>
+            <label
+              class="material-button step-button"
+              for="videoUpload"
+              style="cursor: pointer"
+              id="videoButton"
+              disabled
+            >
+              <span>選ぶ</span>
+            </label>
+            <input
+              type="file"
+              id="videoUpload"
+              accept="video/webm,video/mp4"
+              hidden
+            />
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="section">
+    <div class="section preview-section" id="previewSection">
+      <div class="canvas-container">
+        <canvas id="compositePreview"></canvas>
+      </div>
       <div class="controls">
         <div class="control-group">
           <label>スケール: </label>
@@ -237,9 +352,6 @@
           />
           <span id="scaleValue">1.0</span>
         </div>
-      </div>
-      <div class="canvas-container">
-        <canvas id="compositePreview"></canvas>
       </div>
       <div class="preview-controls">
         <button
@@ -280,7 +392,7 @@
       </div>
     </div>
 
-    <div class="section">
+    <div class="section preview-section" id="recordingSection">
       <div class="recording-controls">
         <button id="startRecording" class="primary-button" title="録画開始">
           <svg
@@ -311,6 +423,27 @@
         </button>
         <div id="recordingStatus" class="status-text"></div>
       </div>
+      <div class="reset-controls">
+        <button
+          id="resetAll"
+          class="secondary-button"
+          title="フレームと動画の選択をリセット"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 12c0 4.97 4.03 9 9 9s9-4.03 9-9-4.03-9-9-9c-1.31 0-2.56.28-3.68.78l1.5 1.5C10.18 4.78 11.07 4.5 12 4.5c4.14 0 7.5 3.36 7.5 7.5s-3.36 7.5-7.5 7.5S4.5 16.14 4.5 12H6l-3-3-3 3h1.5z"
+              fill="currentColor"
+            />
+          </svg>
+          リセット
+        </button>
+      </div>
     </div>
 
     <script>
@@ -332,6 +465,10 @@
             maskImage = img;
             updateMaskStatus(true);
             updateCanvasSize();
+            // ステップ1を完了状態にする
+            updateStepStatus(1, true);
+            // フレームが選択されたらプレビュー領域を表示
+            showPreviewSection();
           };
           img.src = url;
         } else if (msg.type === "error") {
@@ -348,11 +485,46 @@
       let posY = 0;
       let scale = 1;
 
+      // ステップの状態管理
+      function updateStepStatus(stepNumber, completed) {
+        const step = document.getElementById(`step${stepNumber}`);
+        const stepNumberEl = document.getElementById(`step${stepNumber}Number`);
+
+        if (completed) {
+          step.classList.add("completed");
+          step.classList.remove("disabled");
+          // チェックマークを表示
+          stepNumberEl.innerHTML = "✓";
+
+          // 次のステップを有効化
+          if (stepNumber === 1) {
+            const step2 = document.getElementById("step2");
+            const videoButton = document.getElementById("videoButton");
+            step2.classList.remove("disabled");
+            videoButton.removeAttribute("disabled");
+          }
+        }
+      }
+
+      // プレビュー領域を表示する関数
+      function showPreviewSection() {
+        document.getElementById("previewSection").classList.add("visible");
+        document.getElementById("recordingSection").classList.add("visible");
+      }
+
       // キャンバスサイズの設定
       function updateCanvasSize() {
-        if (!maskImage) return;
-        canvas.width = maskImage.width;
-        canvas.height = maskImage.height;
+        if (maskImage) {
+          canvas.width = maskImage.width;
+          canvas.height = maskImage.height;
+        } else if (
+          videoElement &&
+          videoElement.videoWidth &&
+          videoElement.videoHeight
+        ) {
+          canvas.width = videoElement.videoWidth;
+          canvas.height = videoElement.videoHeight;
+        }
         drawComposite();
       }
 
@@ -418,6 +590,12 @@
 
       // 動画ファイルアップロード処理
       document.getElementById("videoUpload").onchange = (event) => {
+        // ステップ1が完了していない場合は処理しない
+        const videoButton = document.getElementById("videoButton");
+        if (videoButton.hasAttribute("disabled")) {
+          return;
+        }
+
         const file = event.target.files[0];
         if (!file) {
           updateVideoStatus(false);
@@ -450,11 +628,35 @@
         video.onloadeddata = async () => {
           updateVideoStatus(true);
           updatePreviewControls();
+          // ステップ2を完了状態にする
+          updateStepStatus(2, true);
+
+          // キャンバスサイズを更新（マスクがある場合はマスクに、ない場合は動画に合わせる）
+          updateCanvasSize();
+
           // 最初のフレームを表示するために一時的に再生
-          await video.play();
-          video.pause();
-          drawComposite();
+          try {
+            await video.play();
+            video.pause();
+            // 少し待ってから描画（フレームデータが確実に利用可能になるまで）
+            setTimeout(() => {
+              drawComposite();
+            }, 100);
+          } catch (error) {
+            console.log("Video play error:", error);
+            // エラーが発生しても描画は試行
+            drawComposite();
+          }
         };
+
+        // フレームデータが利用可能になったときの処理
+        video.addEventListener("loadedmetadata", () => {
+          updateCanvasSize();
+        });
+
+        video.addEventListener("canplay", () => {
+          drawComposite();
+        });
 
         // 再生状態変更時の処理
         video.addEventListener("play", () => {
@@ -628,6 +830,68 @@
           mediaRecorder.stop();
           videoElement.pause();
         }
+      };
+
+      // リセット機能
+      document.getElementById("resetAll").onclick = () => {
+        // 確認ダイアログ
+        if (!confirm("フレームと動画の選択をリセットしますか？")) {
+          return;
+        }
+
+        // 録画中の場合は停止
+        if (isRecording && mediaRecorder) {
+          mediaRecorder.stop();
+          videoElement.pause();
+        }
+
+        // 状態をリセット
+        maskImage = null;
+        videoElement = null;
+        posX = 0;
+        posY = 0;
+        scale = 1;
+
+        // UI要素をリセット
+        document.getElementById("scaleValue").textContent = "1.0";
+        document.getElementById("scale").value = "1";
+        document.getElementById("videoUpload").value = "";
+        document.getElementById("recordingStatus").textContent = "";
+
+        // ステップ状態をリセット
+        const step1 = document.getElementById("step1");
+        const step2 = document.getElementById("step2");
+        const step1Number = document.getElementById("step1Number");
+        const step2Number = document.getElementById("step2Number");
+        const videoButton = document.getElementById("videoButton");
+
+        step1.classList.remove("completed");
+        step2.classList.remove("completed");
+        step2.classList.add("disabled");
+        step1Number.innerHTML = "1";
+        step2Number.innerHTML = "2";
+        videoButton.setAttribute("disabled", "");
+
+        // プレビュー領域を非表示
+        document.getElementById("previewSection").classList.remove("visible");
+        document.getElementById("recordingSection").classList.remove("visible");
+
+        // キャンバスをクリア
+        const canvas = document.getElementById("compositePreview");
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.width = 0;
+        canvas.height = 0;
+
+        // ボタンの状態をリセット
+        document.getElementById("startRecording").disabled = false;
+        document.getElementById("stopRecording").disabled = true;
+        document.getElementById("playVideo").disabled = true;
+        document.getElementById("resetVideo").disabled = true;
+
+        // 録画状態をリセット
+        isRecording = false;
+        document.body.classList.remove("recording");
       };
     </script>
   </body>

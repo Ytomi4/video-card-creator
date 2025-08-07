@@ -261,8 +261,49 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 12px;
         margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .control-button {
+        width: 44px;
+        height: 44px;
+        padding: 10px;
+        border: 1px solid var(--figma-color-border);
+        border-radius: var(--figma-radius-small);
+        background: var(--figma-color-bg);
+        color: var(--figma-color-icon);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .control-button:hover:not(:disabled) {
+        background: var(--figma-color-bg-secondary);
+        border-color: var(--figma-color-text-secondary);
+      }
+      .control-button:disabled {
+        color: var(--figma-color-icon-disabled);
+        background: var(--figma-color-bg-disabled);
+        cursor: not-allowed;
+      }
+      .control-button.recording-button {
+        border-color: #f24822;
+        background: #fff5f2;
+      }
+      .control-button.recording-button:hover:not(:disabled) {
+        background: #ffe8e1;
+        border-color: #d9381e;
+      }
+      .control-button svg {
+        width: 24px;
+        height: 24px;
+      }
+      .status-text {
+        font-size: 12px;
+        color: var(--figma-color-text-secondary);
+        margin-left: 12px;
       }
       .preview-button {
         width: 32px;
@@ -341,22 +382,21 @@
       </div>
       <div class="controls">
         <div class="control-group">
-          <label>スケール: </label>
           <input
             type="range"
             id="scale"
             min="0.1"
             max="2"
-            step="0.1"
+            step="0.01"
             value="1"
           />
-          <span id="scaleValue">1.0</span>
+          <span id="scaleValue">1.00</span>
         </div>
       </div>
       <div class="preview-controls">
         <button
           id="resetVideo"
-          class="preview-button"
+          class="control-button"
           disabled
           title="最初から"
         >
@@ -375,7 +415,7 @@
         </button>
         <button
           id="playVideo"
-          class="preview-button"
+          class="control-button"
           disabled
           title="再生/一時停止"
         >
@@ -389,40 +429,42 @@
             <path d="M8 5v14l11-7z" fill="currentColor" />
           </svg>
         </button>
-      </div>
-    </div>
-
-    <div class="section preview-section" id="recordingSection">
-      <div class="recording-controls">
-        <button id="startRecording" class="primary-button" title="録画開始">
+        <button
+          id="startRecording"
+          class="control-button recording-button"
+          title="録画開始"
+        >
           <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <circle cx="10" cy="10" r="7" fill="#F24822" />
+            <circle cx="12" cy="12" r="8" fill="#F24822" />
           </svg>
         </button>
         <button
           id="stopRecording"
-          class="secondary-button"
+          class="control-button"
           disabled
           title="録画停止"
         >
           <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <rect x="5" y="5" width="10" height="10" rx="2" fill="#333" />
+            <rect x="6" y="6" width="12" height="12" rx="2" fill="#333" />
           </svg>
         </button>
         <div id="recordingStatus" class="status-text"></div>
       </div>
+    </div>
+
+    <div class="section preview-section" id="recordingSection">
       <div class="reset-controls">
         <button
           id="resetAll"
@@ -728,7 +770,7 @@
       // スケール制御
       document.getElementById("scale").oninput = (e) => {
         scale = parseFloat(e.target.value);
-        document.getElementById("scaleValue").textContent = scale.toFixed(1);
+        document.getElementById("scaleValue").textContent = scale.toFixed(2);
         drawComposite();
       };
 
@@ -853,7 +895,7 @@
         scale = 1;
 
         // UI要素をリセット
-        document.getElementById("scaleValue").textContent = "1.0";
+        document.getElementById("scaleValue").textContent = "1.00";
         document.getElementById("scale").value = "1";
         document.getElementById("videoUpload").value = "";
         document.getElementById("recordingStatus").textContent = "";

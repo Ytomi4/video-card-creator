@@ -15,12 +15,6 @@
         margin: 0 0 8px 0;
         font-size: 14px;
       }
-      #maskImagePreview img,
-      #videoPreview video {
-        max-width: 100%;
-        border: 1px solid #ccc;
-        margin-top: 8px;
-      }
       .controls {
         margin-bottom: 12px;
       }
@@ -101,19 +95,28 @@
   <body>
     <h2>Figma プラグイン: マスク画像＋動画合成</h2>
     <div class="section">
-      <h3>1. マスク画像</h3>
-      <button id="getMaskImage">マスク画像取得</button>
-      <div id="maskImagePreview"></div>
+      <h3>1. 素材選択</h3>
+      <div class="materials">
+        <button id="getMaskImage" class="material-button">
+          マスク画像を選択<span class="material-status" id="maskStatus"
+            >未選択</span
+          >
+        </button>
+        <label class="material-button" for="videoUpload">
+          動画を選択
+          <span class="material-status" id="videoStatus">未選択</span>
+        </label>
+        <input
+          type="file"
+          id="videoUpload"
+          accept="video/webm,video/mp4"
+          hidden
+        />
+      </div>
     </div>
 
     <div class="section">
-      <h3>2. 動画ファイル</h3>
-      <input type="file" id="videoUpload" accept="video/webm,video/mp4" />
-      <div id="videoPreview"></div>
-    </div>
-
-    <div class="section">
-      <h3>3. 合成プレビュー</h3>
+      <h3>2. 合成プレビュー</h3>
       <div class="controls">
         <div class="control-group">
           <label>スケール: </label>
@@ -159,9 +162,13 @@
             type: "image/png",
           });
           const url = URL.createObjectURL(blob);
-          document.getElementById(
-            "maskImagePreview"
-          ).innerHTML = `<img src="${url}" />`;
+          const img = new Image();
+          img.onload = () => {
+            maskImage = img;
+            updateMaskStatus(true);
+            updateCanvasSize();
+          };
+          img.src = url;
         } else if (msg.type === "error") {
           alert(msg.message);
         }
@@ -186,42 +193,76 @@
 
       // 合成描画
       function drawComposite() {
-        if (!maskImage || !videoElement) return;
+        // キャンバスが初期化されていない場合は初期化
+        if (!canvas.width || !canvas.height) {
+          if (maskImage) {
+            canvas.width = maskImage.width;
+            canvas.height = maskImage.height;
+          } else if (videoElement) {
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+          } else {
+            return; // どちらの素材もない場合は何もしない
+          }
+        }
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 下層に動画を描画
-        ctx.save();
-        ctx.translate(posX, posY);
-        ctx.scale(scale, scale);
-        ctx.drawImage(videoElement, 0, 0);
-        ctx.restore();
+        // 下層に動画を描画（もしあれば）
+        if (videoElement && videoElement.readyState >= 2) {
+          // HAVE_CURRENT_DATA以上
+          ctx.save();
+          ctx.translate(posX, posY);
+          ctx.scale(scale, scale);
+          ctx.drawImage(videoElement, 0, 0);
+          ctx.restore();
+        }
 
-        // 上層にマスク画像を描画
-        ctx.drawImage(maskImage, 0, 0);
+        // 上層にマスク画像を描画（もしあれば）
+        if (maskImage) {
+          ctx.drawImage(maskImage, 0, 0);
+        }
       }
 
       // 動画ファイルアップロード処理
       document.getElementById("videoUpload").onchange = (event) => {
         const file = event.target.files[0];
-        if (!file) return;
+        if (!file) {
+          updateVideoStatus(false);
+          videoElement = null;
+          return;
+        }
 
         // 動画ファイルの形式チェック
         if (!file.type.match("video/(webm|mp4)")) {
           alert("WebMまたはMP4形式の動画ファイルを選択してください。");
+          updateVideoStatus(false);
           return;
         }
 
         const url = URL.createObjectURL(file);
         const video = document.createElement("video");
         video.src = url;
-        video.controls = true;
-        document.getElementById("videoPreview").innerHTML = "";
-        document.getElementById("videoPreview").appendChild(video);
+
+        // 必要な属性を設定
+        video.autoplay = false;
+        video.loop = true;
+        video.muted = true;
 
         // 合成プレビュー用の参照を保存
         videoElement = video;
+
+        // メタデータ読み込み完了時の処理
+        video.onloadeddata = async () => {
+          updateVideoStatus(true);
+          // 最初のフレームを表示するために一時的に再生
+          await video.play();
+          video.pause();
+          drawComposite();
+        };
+
+        // 再生時の更新処理
         video.addEventListener("play", () => {
-          // 動画再生中は定期的に合成を更新
           function updateCanvas() {
             if (!video.paused && !video.ended) {
               drawComposite();
@@ -232,29 +273,18 @@
         });
       };
 
-      // マスク画像読み込み時の処理を拡張
-      const originalOnMessage = window.onmessage;
-      window.onmessage = (event) => {
-        const msg = event.data.pluginMessage;
-        if (!msg) return;
-        if (msg.type === "mask-image") {
-          const blob = new Blob([new Uint8Array(msg.data)], {
-            type: "image/png",
-          });
-          const url = URL.createObjectURL(blob);
-          const img = new Image();
-          img.onload = () => {
-            maskImage = img;
-            updateCanvasSize();
-          };
-          img.src = url;
-          document.getElementById(
-            "maskImagePreview"
-          ).innerHTML = `<img src="${url}" />`;
-        } else if (msg.type === "error") {
-          alert(msg.message);
-        }
-      };
+      // 状態表示の更新関数
+      function updateMaskStatus(selected) {
+        const status = document.getElementById("maskStatus");
+        status.textContent = selected ? "選択済み" : "未選択";
+        status.classList.toggle("selected", selected);
+      }
+
+      function updateVideoStatus(selected) {
+        const status = document.getElementById("videoStatus");
+        status.textContent = selected ? "選択済み" : "未選択";
+        status.classList.toggle("selected", selected);
+      }
 
       // ドラッグ＆ドロップの制御
       let isDragging = false;

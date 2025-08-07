@@ -90,6 +90,38 @@
       .recording .status-text {
         color: #f00;
       }
+      .preview-controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .preview-button {
+        background: transparent;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        width: 36px;
+        height: 36px;
+        padding: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #333;
+      }
+      .preview-button:hover {
+        background: #f5f5f5;
+        border-color: #ccc;
+      }
+      .preview-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .preview-button svg {
+        width: 24px;
+        height: 24px;
+      }
     </style>
   </head>
   <body>
@@ -134,6 +166,43 @@
       <div class="canvas-container">
         <canvas id="compositePreview"></canvas>
         <div class="canvas-hint">動画をドラッグして位置を調整できます</div>
+      </div>
+      <div class="preview-controls">
+        <button
+          id="resetVideo"
+          class="preview-button"
+          disabled
+          title="最初から"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"
+              fill="currentColor"
+            />
+          </svg>
+        </button>
+        <button
+          id="playVideo"
+          class="preview-button"
+          disabled
+          title="再生/一時停止"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M8 5v14l11-7z" fill="currentColor" />
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -224,12 +293,40 @@
         }
       }
 
+      // プレビューコントロールの更新
+      function updatePreviewControls() {
+        const playButton = document.getElementById("playVideo");
+        const resetButton = document.getElementById("resetVideo");
+        const hasVideo = videoElement != null;
+
+        playButton.disabled = !hasVideo;
+        resetButton.disabled = !hasVideo;
+
+        // 再生/一時停止アイコンの更新
+        if (hasVideo && !videoElement.paused) {
+          playButton.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="currentColor"/>
+            </svg>
+          `;
+          playButton.title = "一時停止";
+        } else {
+          playButton.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 5v14l11-7z" fill="currentColor"/>
+            </svg>
+          `;
+          playButton.title = "再生";
+        }
+      }
+
       // 動画ファイルアップロード処理
       document.getElementById("videoUpload").onchange = (event) => {
         const file = event.target.files[0];
         if (!file) {
           updateVideoStatus(false);
           videoElement = null;
+          updatePreviewControls();
           return;
         }
 
@@ -237,6 +334,7 @@
         if (!file.type.match("video/(webm|mp4)")) {
           alert("WebMまたはMP4形式の動画ファイルを選択してください。");
           updateVideoStatus(false);
+          updatePreviewControls();
           return;
         }
 
@@ -255,11 +353,21 @@
         // メタデータ読み込み完了時の処理
         video.onloadeddata = async () => {
           updateVideoStatus(true);
+          updatePreviewControls();
           // 最初のフレームを表示するために一時的に再生
           await video.play();
           video.pause();
           drawComposite();
         };
+
+        // 再生状態変更時の処理
+        video.addEventListener("play", () => {
+          updatePreviewControls();
+        });
+
+        video.addEventListener("pause", () => {
+          updatePreviewControls();
+        });
 
         // 再生時の更新処理
         video.addEventListener("play", () => {
@@ -328,6 +436,25 @@
         drawComposite();
       };
 
+      // プレビュー用の動画コントロール
+      document.getElementById("playVideo").onclick = async () => {
+        if (!videoElement) return;
+
+        if (videoElement.paused) {
+          await videoElement.play();
+        } else {
+          videoElement.pause();
+        }
+        updatePreviewControls();
+      };
+
+      document.getElementById("resetVideo").onclick = () => {
+        if (!videoElement) return;
+
+        videoElement.currentTime = 0;
+        drawComposite();
+      };
+
       // 録画制御
       let mediaRecorder = null;
       let recordedChunks = [];
@@ -375,8 +502,21 @@
           document.body.classList.remove("recording");
         };
 
-        // 録画開始
+        // 録画開始前の準備
+        videoElement.loop = false; // 録画時はループを無効化
         videoElement.currentTime = 0;
+
+        // 動画終了時の処理を設定
+        const handleVideoEnd = () => {
+          if (isRecording) {
+            mediaRecorder.stop();
+            videoElement.removeEventListener("ended", handleVideoEnd);
+            videoElement.loop = true; // プレビュー用のループを再有効化
+          }
+        };
+        videoElement.addEventListener("ended", handleVideoEnd);
+
+        // 録画開始
         await videoElement.play();
         mediaRecorder.start();
         isRecording = true;
@@ -386,14 +526,6 @@
         document.getElementById("stopRecording").disabled = false;
         document.getElementById("recordingStatus").textContent = "録画中...";
         document.body.classList.add("recording");
-
-        // 動画終了時の処理
-        videoElement.onended = () => {
-          if (isRecording) {
-            mediaRecorder.stop();
-            videoElement.onended = null;
-          }
-        };
       };
 
       // 手動停止

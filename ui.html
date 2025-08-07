@@ -4,43 +4,103 @@
     <meta charset="UTF-8" />
     <title>Figma プラグイン: マスク画像取得</title>
     <style>
+      :root {
+        --figma-color-bg: #ffffff;
+        --figma-color-bg-secondary: #f5f5f5;
+        --figma-color-bg-tertiary: #e5e5e5;
+        --figma-color-border: #e0e0e0;
+        --figma-color-text: #333333;
+        --figma-color-text-secondary: #666666;
+        --figma-color-brand: #0d99ff;
+        --figma-color-brand-hover: #0a8ae6;
+        --figma-radius-small: 2px;
+        --figma-radius-med: 6px;
+        --figma-space-small: 8px;
+        --figma-space-med: 16px;
+        --figma-space-large: 24px;
+        --figma-color-bg-disabled: rgba(0, 0, 0, 0.05);
+        --figma-color-icon: #333333;
+        --figma-color-icon-secondary: #666666;
+        --figma-color-icon-disabled: rgba(0, 0, 0, 0.3);
+      }
       body {
-        font-family: sans-serif;
-        margin: 16px;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+        margin: 0;
+        padding: var(--figma-space-med);
+        background: var(--figma-color-bg);
+        color: var(--figma-color-text);
+        -webkit-font-smoothing: antialiased;
       }
       .section {
-        margin-bottom: 24px;
+        margin-bottom: var(--figma-space-large);
       }
-      .section h3 {
-        margin: 0 0 8px 0;
+      .materials {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--figma-space-med);
+        width: 100%;
+        max-width: min(600px, 100vw - 2 * var(--figma-space-med));
+        margin: var(--figma-space-med) auto;
+        padding: 0 var(--figma-space-small);
+        box-sizing: border-box;
+      }
+      .material-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: var(--figma-space-med);
+        border: 1px solid var(--figma-color-border);
+        border-radius: var(--figma-radius-med);
+        background: var(--figma-color-bg);
+        color: var(--figma-color-text);
         font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        box-sizing: border-box;
+        min-width: 0;
+      }
+      .material-button:hover {
+        background: var(--figma-color-bg-secondary);
+        border-color: var(--figma-color-text-secondary);
       }
       .controls {
-        margin-bottom: 12px;
+        margin-bottom: var(--figma-space-med);
+        background: var(--figma-color-bg-secondary);
+        padding: var(--figma-space-small);
+        border-radius: var(--figma-radius-med);
       }
       .control-group {
-        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: var(--figma-space-small);
       }
       .control-group label {
-        display: inline-block;
-        width: 60px;
-      }
-      .control-group input[type="number"] {
-        width: 60px;
-        margin: 0 4px;
+        color: var(--figma-color-text-secondary);
+        font-size: 12px;
       }
       .control-group input[type="range"] {
-        width: 120px;
-        margin: 0 8px;
+        flex: 1;
+        height: 2px;
+        background: var(--figma-color-border);
+        border-radius: var(--figma-radius-small);
+      }
+      .control-group span {
+        font-size: 12px;
+        color: var(--figma-color-text-secondary);
+        min-width: 32px;
       }
       .canvas-container {
         position: relative;
       }
       #compositePreview {
-        border: 1px solid #ccc;
-        max-width: 100%;
-        background: #f0f0f0;
-        cursor: move;
+        display: block;
+        margin: 0 auto;
+        border: 1px solid var(--figma-color-border);
+        border-radius: var(--figma-radius-small);
+        background: var(--figma-color-bg-tertiary);
       }
       .canvas-hint {
         position: absolute;
@@ -58,37 +118,55 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        margin-top: var(--figma-space-large);
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
       .primary-button {
-        background: #18a0fb;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
+        background: var(--figma-color-bg);
+        color: #f24822;
+        border: 2px solid #f24822;
+        padding: var(--figma-space-small) var(--figma-space-med);
+        border-radius: var(--figma-radius-med);
         cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+      .primary-button:hover {
+        background: #fff5f2;
+        border-color: #d9381e;
       }
       .primary-button:disabled {
-        background: #ccc;
+        background: var(--figma-color-bg-tertiary);
+        color: var(--figma-color-text-secondary);
+        border-color: var(--figma-color-border);
         cursor: not-allowed;
       }
       .secondary-button {
-        background: white;
-        color: #333;
-        border: 1px solid #ccc;
-        padding: 8px 16px;
-        border-radius: 6px;
+        background: var(--figma-color-bg);
+        color: var(--figma-color-text);
+        border: 1px solid var(--figma-color-border);
+        padding: var(--figma-space-small) var(--figma-space-med);
+        border-radius: var(--figma-radius-med);
         cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+      .secondary-button:hover {
+        background: var(--figma-color-bg-secondary);
+        border-color: var(--figma-color-text-secondary);
       }
       .secondary-button:disabled {
-        color: #999;
+        color: var(--figma-color-text-secondary);
         cursor: not-allowed;
       }
       .status-text {
-        color: #666;
-        font-size: 14px;
+        color: var(--figma-color-text-secondary);
+        font-size: 12px;
       }
       .recording .status-text {
-        color: #f00;
+        color: #f44336;
       }
       .preview-controls {
         display: flex;
@@ -98,24 +176,23 @@
         margin-top: 12px;
       }
       .preview-button {
+        width: 32px;
+        height: 32px;
+        padding: 4px;
+        border: 1px solid var(--figma-color-border);
+        border-radius: var(--figma-radius-small);
         background: transparent;
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
-        width: 36px;
-        height: 36px;
-        padding: 6px;
+        color: var(--figma-color-icon);
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #333;
+        transition: all 0.1s ease;
       }
-      .preview-button:hover {
-        background: #f5f5f5;
-        border-color: #ccc;
+      .preview-button:hover:not(:disabled) {
+        background: var(--figma-color-bg-secondary);
+        border-color: var(--figma-color-text-secondary);
       }
       .preview-button:disabled {
-        opacity: 0.5;
+        color: var(--figma-color-icon-disabled);
+        background: var(--figma-color-bg-disabled);
         cursor: not-allowed;
       }
       .preview-button svg {
@@ -125,18 +202,17 @@
     </style>
   </head>
   <body>
-    <h2>Figma プラグイン: マスク画像＋動画合成</h2>
     <div class="section">
-      <h3>1. 素材選択</h3>
       <div class="materials">
         <button id="getMaskImage" class="material-button">
-          マスク画像を選択<span class="material-status" id="maskStatus"
-            >未選択</span
-          >
+          <span>フレームを選択</span>
         </button>
-        <label class="material-button" for="videoUpload">
-          動画を選択
-          <span class="material-status" id="videoStatus">未選択</span>
+        <label
+          class="material-button"
+          for="videoUpload"
+          style="cursor: pointer"
+        >
+          <span>動画を選択</span>
         </label>
         <input
           type="file"
@@ -148,7 +224,6 @@
     </div>
 
     <div class="section">
-      <h3>2. 合成プレビュー</h3>
       <div class="controls">
         <div class="control-group">
           <label>スケール: </label>
@@ -165,7 +240,6 @@
       </div>
       <div class="canvas-container">
         <canvas id="compositePreview"></canvas>
-        <div class="canvas-hint">動画をドラッグして位置を調整できます</div>
       </div>
       <div class="preview-controls">
         <button
@@ -207,11 +281,33 @@
     </div>
 
     <div class="section">
-      <h3>4. 録画</h3>
       <div class="recording-controls">
-        <button id="startRecording" class="primary-button">録画開始</button>
-        <button id="stopRecording" class="secondary-button" disabled>
-          手動停止
+        <button id="startRecording" class="primary-button" title="録画開始">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle cx="10" cy="10" r="7" fill="#F24822" />
+          </svg>
+        </button>
+        <button
+          id="stopRecording"
+          class="secondary-button"
+          disabled
+          title="録画停止"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect x="5" y="5" width="10" height="10" rx="2" fill="#333" />
+          </svg>
         </button>
         <div id="recordingStatus" class="status-text"></div>
       </div>
@@ -331,7 +427,7 @@
         }
 
         // 動画ファイルの形式チェック
-        if (!file.type.match("video/(webm|mp4)")) {
+        if (!file.type.match(/^video\/(webm|mp4)$/)) {
           alert("WebMまたはMP4形式の動画ファイルを選択してください。");
           updateVideoStatus(false);
           updatePreviewControls();
@@ -383,15 +479,13 @@
 
       // 状態表示の更新関数
       function updateMaskStatus(selected) {
-        const status = document.getElementById("maskStatus");
-        status.textContent = selected ? "選択済み" : "未選択";
-        status.classList.toggle("selected", selected);
+        // ステータス表示要素が削除されたため、何もしない
+        // 必要に応じて他の視覚的フィードバックを追加可能
       }
 
       function updateVideoStatus(selected) {
-        const status = document.getElementById("videoStatus");
-        status.textContent = selected ? "選択済み" : "未選択";
-        status.classList.toggle("selected", selected);
+        // ステータス表示要素が削除されたため、何もしない
+        // 必要に応じて他の視覚的フィードバックを追加可能
       }
 
       // ドラッグ＆ドロップの制御

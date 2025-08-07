@@ -861,7 +861,7 @@
         }
 
         // キャンバスと音声を組み合わせたストリームを作成
-        const canvasStream = canvas.captureStream();
+        const canvasStream = canvas.captureStream(60); // 60fps指定
         const audioTrack = videoElement.captureStream().getAudioTracks()[0];
         if (audioTrack) {
           canvasStream.addTrack(audioTrack);

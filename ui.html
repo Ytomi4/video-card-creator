@@ -430,6 +430,25 @@
           </svg>
         </button>
         <button
+          id="muteVideo"
+          class="control-button"
+          disabled
+          title="音量オン/オフ"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 10v4c0 .55.45 1 1 1h3l3.29 3.29c.63.63 1.71.18 1.71-.71V6.41c0-.89-1.08-1.34-1.71-.71L7 9H4c-.55 0-1 .45-1 1zm13.5 2A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
+              fill="currentColor"
+            />
+          </svg>
+        </button>
+        <button
           id="startRecording"
           class="control-button recording-button"
           title="録画開始"
@@ -607,10 +626,12 @@
       function updatePreviewControls() {
         const playButton = document.getElementById("playVideo");
         const resetButton = document.getElementById("resetVideo");
+        const muteButton = document.getElementById("muteVideo");
         const hasVideo = videoElement != null;
 
         playButton.disabled = !hasVideo;
         resetButton.disabled = !hasVideo;
+        muteButton.disabled = !hasVideo;
 
         // 再生/一時停止アイコンの更新
         if (hasVideo && !videoElement.paused) {
@@ -627,6 +648,11 @@
             </svg>
           `;
           playButton.title = "再生";
+        }
+
+        // 音量ボタンの更新
+        if (hasVideo) {
+          updateMuteButton();
         }
       }
 
@@ -661,7 +687,7 @@
         // 必要な属性を設定
         video.autoplay = false;
         video.loop = true;
-        video.muted = true;
+        video.muted = false; // 音声を有効にする
 
         // 合成プレビュー用の参照を保存
         videoElement = video;
@@ -792,6 +818,36 @@
         videoElement.currentTime = 0;
         drawComposite();
       };
+
+      // 音量制御
+      document.getElementById("muteVideo").onclick = () => {
+        if (!videoElement) return;
+
+        videoElement.muted = !videoElement.muted;
+        updateMuteButton();
+      };
+
+      // 音量ボタンの表示更新
+      function updateMuteButton() {
+        const muteButton = document.getElementById("muteVideo");
+        const isMuted = videoElement ? videoElement.muted : true;
+
+        if (isMuted) {
+          muteButton.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" fill="currentColor"/>
+            </svg>
+          `;
+          muteButton.title = "音量オン";
+        } else {
+          muteButton.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 10v4c0 .55.45 1 1 1h3l3.29 3.29c.63.63 1.71.18 1.71-.71V6.41c0-.89-1.08-1.34-1.71-.71L7 9H4c-.55 0-1 .45-1 1zm13.5 2A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" fill="currentColor"/>
+            </svg>
+          `;
+          muteButton.title = "音量オフ";
+        }
+      }
 
       // 録画制御
       let mediaRecorder = null;
@@ -930,6 +986,7 @@
         document.getElementById("stopRecording").disabled = true;
         document.getElementById("playVideo").disabled = true;
         document.getElementById("resetVideo").disabled = true;
+        document.getElementById("muteVideo").disabled = true;
 
         // 録画状態をリセット
         isRecording = false;

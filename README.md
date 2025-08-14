@@ -1,40 +1,116 @@
-Below are the steps to get your plugin running. You can also find instructions at:
+# VideoCardCreator
 
-  https://www.figma.com/plugin-docs/plugin-quickstart-guide/
+Figma 上で作成したマスク画像と動画を合成し、録画して書き出す Figma プラグインです。
 
-This plugin template uses Typescript and NPM, two standard tools in creating JavaScript applications.
+## 概要
 
-First, download Node.js which comes with NPM. This will allow you to install TypeScript and other
-libraries. You can find the download link here:
+VideoCardCreator は、Figma で作成したフレームをマスク画像として使用し、背景動画と合成して新しい動画を作成できるプラグインです。以下の機能を提供しています：
 
-  https://nodejs.org/en/download/
+- Figma フレームのマスク画像としての取得
+- 動画ファイルのアップロードとプレビュー
+- マスク画像と動画のリアルタイム合成
+- 位置・スケール調整機能
+- 合成結果の動画録画と WebM 形式での書き出し
 
-Next, install TypeScript using the command:
+## 機能
 
-  npm install -g typescript
+### 1. マスク画像の取得
 
-Finally, in the directory of your plugin, get the latest type definitions for the plugin API by running:
+- Figma 上で選択したフレームを PNG 形式でエクスポート
+- マスク画像として上層に配置
 
-  npm install --save-dev @figma/plugin-typings
+### 2. 動画ファイルの処理
 
-If you are familiar with JavaScript, TypeScript will look very familiar. In fact, valid JavaScript code
-is already valid Typescript code.
+- WebM、MP4 形式の動画ファイルをアップロード
+- 動画を背景層として配置
 
-TypeScript adds type annotations to variables. This allows code editors such as Visual Studio Code
-to provide information about the Figma API while you are writing code, as well as help catch bugs
-you previously didn't notice.
+### 3. 合成とプレビュー
 
-For more information, visit https://www.typescriptlang.org/
+- マスク画像と動画を Canvas 上でリアルタイム合成
+- 動画の位置調整（ドラッグ操作）
+- 動画のスケール調整（スライダー操作）
 
-Using TypeScript requires a compiler to convert TypeScript (code.ts) into JavaScript (code.js)
-for the browser to run.
+### 4. 録画機能
 
-We recommend writing TypeScript code using Visual Studio code:
+- 60fps での高品質録画
+- 音声付き動画の対応
+- WebM 形式での自動書き出し
 
-1. Download Visual Studio Code if you haven't already: https://code.visualstudio.com/.
-2. Open this directory in Visual Studio Code.
-3. Compile TypeScript to JavaScript: Run the "Terminal > Run Build Task..." menu item,
-    then select "npm: watch". You will have to do this again every time
-    you reopen Visual Studio Code.
+## セットアップ手順
 
-That's it! Visual Studio Code will regenerate the JavaScript file every time you save.
+### Figma での使用方法
+
+1. Figma Desktop アプリケーションを開く
+2. プラグインメニューから「開発」→「マニフェストからプラグインをインポート」を選択
+3. `manifest.json` ファイルを選択してプラグインをロード
+4. プラグインメニューから「VideoCardCreator」を実行
+
+### 開発環境のセットアップ
+
+開発中は以下のコマンドでファイルの変更を監視：
+
+```bash
+npm run watch
+```
+
+単発でビルドする場合：
+
+```bash
+npm run build
+```
+
+## 使用方法
+
+### Step 1: マスク画像の準備
+
+1. プラグインを起動
+2. Figma で合成に使用したいフレームを選択
+3. プラグインの UI 上で「次へ」を選択
+
+### Step 2: 動画のアップロード
+
+1. 「探す」ボタンで動画ファイルを選択
+2. WebM または MP4 形式の動画ファイルをアップロード
+
+### Step 3: 合成の調整
+
+1. プレビュー画面で合成結果を確認
+2. 動画をドラッグして位置を調整
+3. スケールスライダーで動画サイズを調整
+
+### Step 4: 録画と書き出し
+
+1. 録画ボタンで録画開始
+2. 動画の再生が終了すると自動的に録画停止
+3. WebM 形式で動画ファイルが自動ダウンロード
+
+## 技術仕様
+
+- **対応動画形式**: WebM, MP4（入力）/ WebM（出力）
+- **録画フレームレート**: 60fps
+- **音声**: 対応（元動画の音声を保持）
+- **出力解像度**: マスク画像の解像度に準拠
+
+## ファイル構成
+
+- `code.ts` - Figma プラグインのバックエンド（TypeScript）
+- `code.js` - コンパイル済みの JavaScript
+- `ui.html` - プラグインのユーザーインターフェース
+- `manifest.json` - プラグインの設定ファイル
+- `package.json` - NPM の設定とスクリプト
+
+## 開発コマンド
+
+```bash
+# 開発時の自動コンパイル
+npm run watch
+
+# 単発ビルド
+npm run build
+
+# ESLintによるコードチェック
+npm run lint
+
+# ESLintの自動修正
+npm run lint:fix
+```

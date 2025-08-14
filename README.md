@@ -2,6 +2,9 @@
 
 Figma 上で作成したマスク画像と動画を合成し、録画して書き出す Figma プラグインです。
 
+[![How to use VideoCard Creator](https://github.com/user-attachments/assets/22c3f9fa-cf70-4cbb-bd8c-52fb3e006891)](https://youtu.be/IoeTdu-tE_8?si=QyyN8NJZzlh_EJL3)
+
+
 ## 概要
 
 VideoCardCreator は、Figma で作成したフレームをマスク画像として使用し、背景動画と合成して新しい動画を作成できるプラグインです。以下の機能を提供しています：
